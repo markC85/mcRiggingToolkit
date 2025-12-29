@@ -1,6 +1,6 @@
 from maya import cmds, OpenMayaUI
 import maya.api.OpenMaya as om
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore, QtGui
 from shiboken6 import wrapInstance
 import logging
 
@@ -17,7 +17,6 @@ def get_maya_main_window() -> None:
     ptr = OpenMayaUI.MQtUtil.mainWindow()
     return wrapInstance(int(ptr), QtWidgets.QWidget)
 
-
 def show_ui() -> None:
     """
     Buld the UI and delete it if its there
@@ -32,7 +31,6 @@ def show_ui() -> None:
 
     simple_button_ui = RiggingToolsUI()
     simple_button_ui.show()
-
 
 class RiggingToolsUI(QtWidgets.QDialog):
     """
@@ -254,7 +252,7 @@ class RiggingToolsUI(QtWidgets.QDialog):
         Args:
             ctronller (str): this is the name of the controller
         """
-        r, g, b = self.ctrl_color
+        r, g, b = self.color_picked_btn
         for shape in cmds.listRelatives(controller, type="nurbsCurve", fullPath=True):
             cmds.setAttr(shape + ".overrideEnabled", 1)
             cmds.setAttr(shape + ".overrideRGBColors", 1)
@@ -280,6 +278,3 @@ class RiggingToolsUI(QtWidgets.QDialog):
         om.MGlobal.setActiveSelectionList(orig_sel) # restore selection
 
         LOG.info("Finished creating ctrls")
-
-# start UI
-show_ui()
