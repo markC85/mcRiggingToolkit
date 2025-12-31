@@ -1,6 +1,5 @@
 import maya.api.OpenMaya as om
 from maya import cmds
-import re
 
 
 def selected_vertices_center() -> None:
