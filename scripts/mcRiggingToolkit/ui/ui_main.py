@@ -1,7 +1,9 @@
 from maya import cmds, OpenMayaUI
 import maya.api.OpenMaya as om
 from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6.QtGui import QPalette
 from shiboken6 import wrapInstance
+from mcRiggingToolkit.core.rig_template import create_rig_template
 import logging
 
 
@@ -118,37 +120,46 @@ class RiggingToolsUI(QtWidgets.QDialog):
         main_layout.addWidget(self.rig_temp_name_field)
         main_layout.addWidget(self.rig_temp_create_btn)
 
+    def set_ctrl_collor(self, color_value: int) -> None:
+        """
+        This will set the controller color if its selected
+        when you are changing the UI controller color pallet
+
+        Args:
+            color_value = This is the value to set the color to
+                            1 = Red
+                            2 = Blue
+                            3 = Yellow
+                            4 = Custom color
+        """
+        if color_value == 1:
+            self.set_color(QtGui.QColor("red"))
+        elif color_value == 2:
+            self.set_color(QtGui.QColor("blue"))
+        elif color_value == 3:
+            self.set_color(QtGui.QColor("yellow"))
+        elif color_value == 4:
+            self.get_picker_color()
+
+        selection_list = cmds.ls(selection = True, type = "transform")
+        for item in selection_list:
+            self.set_controller_color(item)
+
     def create_connections(self) -> None:
         """
         Connect UI button logic
         """
         self.ctrl_create_btn.clicked.connect(self.create_blank_controller)
-        self.ctrl_color_btn.clicked.connect(self.get_picker_color)
-        self.red_btn.clicked.connect(lambda: self.set_color(QtGui.QColor("red")))
-        self.blue_btn.clicked.connect(lambda: self.set_color(QtGui.QColor("blue")))
-        self.yellow_btn.clicked.connect(lambda: self.set_color(QtGui.QColor("yellow")))
+        self.red_btn.clicked.connect(lambda: self.set_ctrl_collor(1))
+        self.blue_btn.clicked.connect(lambda: self.set_ctrl_collor(2))
+        self.yellow_btn.clicked.connect(lambda: self.set_ctrl_collor(3))
+        self.ctrl_color_btn.clicked.connect(lambda: self.set_ctrl_collor(4))
         self.ctrl_custom_name_checkbox.toggled.connect(
             lambda checked: self.ctrl_name_field.setVisible(checked)
         )
-        self.rig_temp_create_btn.clicked.connect(self.create_rig_template)
-
-    def create_rig_template(self) -> None:
-        """
-        Create the groups for a rig template
-        """
-        rig_name = self.rig_temp_name_field.text().strip()
-        if not rig_name:
-            LOG.warning("No rig name has been specified.")
-            return
-
-        prx_group = cmds.group(empty=True, name="prx_grp", world=True)
-        rnd_group = cmds.group(empty=True, name="render_grp", world=True)
-        geo_group = cmds.group([prx_group, rnd_group], name="geo_grp", world=True)
-        anim_group = cmds.group(empty=True, name="anim_grp", world=True)
-        export_group = cmds.group(empty=True, name="export_grp", world=True)
-        joint_group = cmds.group([anim_group, export_group], name="jnt_grp", world=True)
-        ctrl_group = cmds.group(empty=True, name="ctrl_grp", world=True)
-        cmds.group([geo_group, joint_group, ctrl_group], name=rig_name)
+        self.rig_temp_create_btn.clicked.connect(
+            lambda: create_rig_template(self.rig_temp_name_field.text().strip())
+        )
 
     def set_color(self, color: QtGui.QColor) -> None:
         """
@@ -252,11 +263,15 @@ class RiggingToolsUI(QtWidgets.QDialog):
         Args:
             ctronller (str): this is the name of the controller
         """
-        r, g, b = self.color_picked_btn
+        color = self.color_picked_btn.palette().color(QPalette.Button)
+        r = color.red()
+        g = color.green()
+        b = color.blue()
+
         for shape in cmds.listRelatives(controller, type="nurbsCurve", fullPath=True):
             cmds.setAttr(shape + ".overrideEnabled", 1)
             cmds.setAttr(shape + ".overrideRGBColors", 1)
-            cmds.setAttr(shape + ".overrideColorRGB", r, g, b, type="double3")
+            cmds.setAttr(shape + ".overrideColorRGB", r/255.0, g/255.0, b/255.0)
 
     def create_blank_controller(self) -> None:
         """
@@ -271,7 +286,7 @@ class RiggingToolsUI(QtWidgets.QDialog):
 
             self.create_curve_offset_group(button_name)
         else:
-
+            print(self.get_selected_object_name())
             for obj in self.get_selected_object_name():
                 self.create_curve_offset_group(obj)
 
